@@ -42,7 +42,9 @@ item_boxes = {
 # define colours
 BG = (144, 201, 120)
 RED = (255, 0, 0)
+GREEN = (0, 255, 0)
 WHITE = (255, 255, 255)
+BLACK = (0, 0, 0)
 
 # define font
 font = pygame.font.SysFont("Futura", 30)
@@ -203,6 +205,25 @@ class ItemBox(pygame.sprite.Sprite):
             # delete the item box
             self.kill()
 
+class HealthBar():
+    def __init__(self, x, y, health, max_health):
+        self.x = x
+        self.y = y
+        self.health = health
+        self.max_health = max_health
+
+    def draw(self, health):
+        # update with new health
+        self.health = health
+        # calculate health ratio
+        ratio = self.health / self.max_health
+
+        pygame.draw.rect(screen, BLACK, (self.x - 2, self.y - 2, 154, 24))
+        pygame.draw.rect(screen, RED, (self.x, self.y, 150, 20))
+        pygame.draw.rect(screen, GREEN, (self.x, self.y, 150 * ratio , 20))
+
+
+
 class Bullet(pygame.sprite.Sprite):
     def __init__(self, x, y, direction):
         pygame.sprite.Sprite.__init__(self)
@@ -322,6 +343,7 @@ item_box = ItemBox("Grenade", 500, 260)
 item_box_group.add(item_box)
 
 player = Soldier('player', 200, 200, 3, 5, 20, 5)
+heal_bar = HealthBar(10, 10, player.health, player.health)
 enemy = Soldier('enemy', 400, 200, 3, 5, 20, 0)
 enemy2 = Soldier('enemy', 300, 300, 3, 5, 20, 0)
 enemy_group.add(enemy)
@@ -333,12 +355,19 @@ while run:
     clock.tick(FPS)
 
     draw_bg()
-    #show ammo
-    draw_text(f'Ammo: {player.ammo}' , font, WHITE, 10, 30)
-    #show grenades
-    draw_text(f'Grenades: {player.grenades}' , font, WHITE, 10, 60)
-    #show health
-    draw_text(f'Health: {player.health}' , font, WHITE, 10, 90)
+    # show player healh
+    heal_bar.draw(player.health)
+    # show ammo
+    draw_text(f'Ammo: ', font, WHITE, 10, 35)
+    for x in range(player.ammo):
+        screen.blit(bullet_img, (90 + (x * 10),40))
+
+    # show grenades
+    draw_text(f'Grenades:', font, WHITE, 10, 60)
+    for x in range(player.grenades):
+        screen.blit(grenade_img, (135 + (x * 15),65))
+
+
 
     player.update()
     player.draw()
