@@ -113,6 +113,8 @@ class Soldier(pygame.sprite.Sprite):
         self.image = self.animation_list[self.action][self.frame_index]
         self.rect = self.image.get_rect()
         self.rect.center = (x, y)
+        self.width = self.image.get_width()
+        self.height = self.image.get_height()
 
     def update(self):
         self.update_animation()
@@ -148,10 +150,27 @@ class Soldier(pygame.sprite.Sprite):
             self.vel_y
         dy += self.vel_y
 
-        # check collision with floor
-        if self.rect.bottom + dy > 300:
-            dy = 300 - self.rect.bottom
-            self.in_air = False
+        # check for collision
+        for tile in world.obstacle_list:
+            # check collision in the x direction
+
+            if tile[1].colliderect(self.rect.x + dx, self.rect.y, self.width, self.height):
+                dx = 0
+            # check collision in the x direction
+            if tile[1].colliderect(self.rect.x + dx, self.rect.y, self.width, self.height):
+                # check if below the ground, jumping
+                if self.vel_y < 0:
+                    self.vel_y = 0
+                    dy = tile[1].bottom - self.rect.top
+
+                 # check if the above the ground, falling
+                if self.vel_y >= 0:
+                    self.vel_y = 0
+                    self.in_air = False
+                    dy = tile[1].top - self.rect.bottom
+
+
+
 
         # update rectangle position
         self.rect.x += dx
@@ -251,9 +270,11 @@ class World():
                     if tile >= 0 and tile <= 8:
                         self.obstacle_list.append(tile_data)
                     elif tile >= 9 and tile <= 10:
-                        pass # water
+                        water = Water(img, x * TILE_SIZE, y * TILE_SIZE)
+                        water_group.add(water)
                     elif tile >= 11 and tile <= 14:
-                        pass # decoration
+                        decoration = Decoration(img, x * TILE_SIZE, y * TILE_SIZE)
+                        decoration_group.add(decoration)
                     elif tile == 15:# create player
                         player = Soldier('player', x * TILE_SIZE, y * TILE_SIZE, 1.65, 5, 20, 5)
                         heal_bar = HealthBar(10, 10, player.health, player.health)
@@ -270,7 +291,8 @@ class World():
                         item_box = ItemBox("Health",  x * TILE_SIZE, y * TILE_SIZE)
                         item_box_group.add(item_box)
                     elif tile == 20: # ctreate exit
-                        pass
+                        exiting = Exit(img, x * TILE_SIZE, y * TILE_SIZE)
+                        exit_group.add(exiting)
 
         return player, heal_bar
 
@@ -279,6 +301,28 @@ class World():
     def draw(self):
         for tile in self.obstacle_list:
             screen.blit(tile[0], tile[1])
+
+class Decoration(pygame.sprite.Sprite):
+    def __init__(self,img, x, y):
+        pygame.sprite.Sprite.__init__(self)
+        self.image = img
+        self.rect = self.image.get_rect()
+        self.rect.midtop = (x + TILE_SIZE // 2, y + (TILE_SIZE - self.image.get_height()))
+
+class Water(pygame.sprite.Sprite):
+    def __init__(self,img, x, y):
+        pygame.sprite.Sprite.__init__(self)
+        self.image = img
+        self.rect = self.image.get_rect()
+        self.rect.midtop = (x + TILE_SIZE // 2, y + (TILE_SIZE - self.image.get_height()))
+
+class Exit(pygame.sprite.Sprite):
+    def __init__(self,img, x, y):
+        pygame.sprite.Sprite.__init__(self)
+        self.image = img
+        self.rect = self.image.get_rect()
+        self.rect.midtop = (x + TILE_SIZE // 2, y + (TILE_SIZE - self.image.get_height()))
+
 
 class ItemBox(pygame.sprite.Sprite):
     def __init__(self,item_type, x, y):
@@ -433,6 +477,9 @@ bullet_group = pygame.sprite.Group()
 grenade_group = pygame.sprite.Group()
 explosion_group = pygame.sprite.Group()
 item_box_group = pygame.sprite.Group()
+decoration_group = pygame.sprite.Group()
+water_group = pygame.sprite.Group()
+exit_group = pygame.sprite.Group()
 
 
 
@@ -496,10 +543,16 @@ while run:
     grenade_group.update()
     explosion_group.update()
     item_box_group.update()
+    decoration_group.update()
+    water_group.update()
+    exit_group.update()
     bullet_group.draw(screen)
     grenade_group.draw(screen)
     explosion_group.draw(screen)
     item_box_group.draw(screen)
+    decoration_group.draw(screen)
+    water_group.draw(screen)
+    exit_group.draw(screen)
 
     # update player actions
     if player.alive:
